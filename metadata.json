@@ -1,0 +1,5 @@
+{
+  "name": "Sanwanay Network",
+  "description": "Sistem Monitoring & Ticketing Terpadu Sanwanay Network - Putra Jambu Karya",
+  "requestFramePermissions": ["camera", "geolocation"]
+}

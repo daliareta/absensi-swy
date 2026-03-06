@@ -40,30 +40,54 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: SidebarItemProps) =
 export default function Layout({ children, activeTab, setActiveTab, user, onLogout }: any) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Auto-update location for technicians
+  // Auto-update location for technicians (Stealth Mode)
   useEffect(() => {
     if (user?.role === 'Teknisi' || user?.role === 'Engineer') {
-      const updateLocation = () => {
+      let watchId: number;
+
+      const startTracking = () => {
         if ("geolocation" in navigator) {
-          navigator.geolocation.getCurrentPosition(async (position) => {
-            try {
-              await fetchWithAuth('/tracking/update', {
-                method: 'POST',
-                body: JSON.stringify({
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude
-                })
-              });
-            } catch (error) {
-              console.error('Failed to auto-update location:', error);
+          watchId = navigator.geolocation.watchPosition(
+            async (position) => {
+              try {
+                await fetchWithAuth('/tracking/update', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    heading: position.coords.heading
+                  })
+                });
+              } catch (e) {
+                // Silent fail to stay stealthy
+              }
+            },
+            () => {}, // Silent error
+            {
+              enableHighAccuracy: true,
+              maximumAge: 0,
+              timeout: 10000
             }
-          });
+          );
         }
       };
 
-      updateLocation(); // Initial update
-      const interval = setInterval(updateLocation, 60000); // Update every 1 minute
-      return () => clearInterval(interval);
+      startTracking();
+
+      // Re-start tracking if page becomes visible again (in case it was suspended)
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          if (watchId) navigator.geolocation.clearWatch(watchId);
+          startTracking();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
   }, [user]);
 

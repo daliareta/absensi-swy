@@ -28,7 +28,7 @@ export default function Employees() {
     email: '',
     password: '',
     role: 'Teknisi',
-    area: 'Kemiri',
+    area: 'Desa Jambu Karya',
     specialization: 'Fiber Optic'
   });
 
@@ -67,7 +67,7 @@ export default function Employees() {
           email: '',
           password: '',
           role: 'Teknisi',
-          area: 'Kemiri',
+          area: 'Desa Jambu Karya',
           specialization: 'Fiber Optic'
         });
         loadEmployees();
@@ -319,9 +319,43 @@ export default function Employees() {
                         value={formData.area}
                         onChange={(e) => setFormData({...formData, area: e.target.value})}
                       >
-                        <option value="Kemiri">DESA KEMIRI</option>
-                        <option value="Jambu Karya">DESA JAMBU KARYA</option>
-                        <option value="All Area">JALUR UTAMA</option>
+                        <optgroup label="KECAMATAN RAJEG">
+                          <option value="Desa Jambu Karya">DESA JAMBU KARYA</option>
+                          <option value="Desa Daon">DESA DAON</option>
+                          <option value="Daon Pintu">DAON PINTU</option>
+                          <option value="Daon Lembur">DAON LEMBUR</option>
+                          <option value="Desa Mekarsari">DESA MEKARSARI</option>
+                          <option value="Desa Rajeg Mulya">DESA RAJEG MULYA</option>
+                          <option value="Desa Rancabango">DESA RANCABANGO</option>
+                          <option value="Desa Sukamanah (Rajeg)">DESA SUKAMANAH (RAJEG)</option>
+                          <option value="Desa Sukasari">DESA SUKASARI</option>
+                          <option value="Desa Tanjakan">DESA TANJAKAN</option>
+                          <option value="Badak Onom">BADAK ONOM</option>
+                          <option value="Onom">ONOM</option>
+                          <option value="PSP / Perum Sukatani Permai">PSP / PERUM SUKATANI PERMAI</option>
+                        </optgroup>
+                        <optgroup label="KECAMATAN KEMIRI">
+                          <option value="Desa Kemiri">DESA KEMIRI</option>
+                          <option value="Desa Karang Anyar">DESA KARANG ANYAR</option>
+                          <option value="Desa Klebet">DESA KLEBET</option>
+                          <option value="Kelebet">KELEBET</option>
+                          <option value="Desa Legok Sukamaju">DESA LEGOK SUKAMAJU</option>
+                          <option value="Desa Lontar">DESA LONTAR</option>
+                          <option value="Desa Patramanggala">DESA PATRAMANGGALA</option>
+                          <option value="Patra">PATRA</option>
+                          <option value="Desa Rancalabuh">DESA RANCALABUH</option>
+                          <option value="Desa Sukamanah (Kemiri)">DESA SUKAMANAH (KEMIRI)</option>
+                        </optgroup>
+                        <optgroup label="LOKASI LAINNYA">
+                          <option value="Ribut">RIBUT</option>
+                          <option value="Pabuaran">PABUARAN</option>
+                          <option value="Cambai">CAMBAI</option>
+                          <option value="Santri Sabrang">SANTRI SABRANG</option>
+                          <option value="Santri Asem">SANTRI ASEM</option>
+                          <option value="Gabusan">GABUSAN</option>
+                          <option value="KP. Baru">KP. BARU</option>
+                        </optgroup>
+                        <option value="All Area">JALUR UTAMA (BACKBONE)</option>
                       </select>
                     </div>
                     <div className="space-y-2">

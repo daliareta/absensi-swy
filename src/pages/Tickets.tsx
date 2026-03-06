@@ -46,7 +46,7 @@ export default function Tickets() {
     address: '',
     phone: '',
     problem_type: 'Internet Down',
-    area: 'Kemiri',
+    area: 'Desa Jambu Karya',
     description: '',
     priority: 'Medium',
     assigned_to: ''
@@ -145,7 +145,7 @@ export default function Tickets() {
           address: '',
           phone: '',
           problem_type: 'Internet Down',
-          area: 'Kemiri',
+          area: 'Desa Jambu Karya',
           description: '',
           priority: 'Medium',
           assigned_to: ''
@@ -276,9 +276,43 @@ export default function Tickets() {
               }}
             >
               <option value="All">SEMUA AREA</option>
-              <option value="Kemiri">KEMIRI</option>
-              <option value="Jambu Karya">JAMBU KARYA</option>
-              <option value="All Area">JALUR UTAMA</option>
+              <optgroup label="KECAMATAN RAJEG">
+                <option value="Desa Jambu Karya">DESA JAMBU KARYA</option>
+                <option value="Desa Daon">DESA DAON</option>
+                <option value="Daon Pintu">DAON PINTU</option>
+                <option value="Daon Lembur">DAON LEMBUR</option>
+                <option value="Desa Mekarsari">DESA MEKARSARI</option>
+                <option value="Desa Rajeg Mulya">DESA RAJEG MULYA</option>
+                <option value="Desa Rancabango">DESA RANCABANGO</option>
+                <option value="Desa Sukamanah (Rajeg)">DESA SUKAMANAH (RAJEG)</option>
+                <option value="Desa Sukasari">DESA SUKASARI</option>
+                <option value="Desa Tanjakan">DESA TANJAKAN</option>
+                <option value="Badak Onom">BADAK ONOM</option>
+                <option value="Onom">ONOM</option>
+                <option value="PSP / Perum Sukatani Permai">PSP / PERUM SUKATANI PERMAI</option>
+              </optgroup>
+              <optgroup label="KECAMATAN KEMIRI">
+                <option value="Desa Kemiri">DESA KEMIRI</option>
+                <option value="Desa Karang Anyar">DESA KARANG ANYAR</option>
+                <option value="Desa Klebet">DESA KLEBET</option>
+                <option value="Kelebet">KELEBET</option>
+                <option value="Desa Legok Sukamaju">DESA LEGOK SUKAMAJU</option>
+                <option value="Desa Lontar">DESA LONTAR</option>
+                <option value="Desa Patramanggala">DESA PATRAMANGGALA</option>
+                <option value="Patra">PATRA</option>
+                <option value="Desa Rancalabuh">DESA RANCALABUH</option>
+                <option value="Desa Sukamanah (Kemiri)">DESA SUKAMANAH (KEMIRI)</option>
+              </optgroup>
+              <optgroup label="LOKASI LAINNYA">
+                <option value="Ribut">RIBUT</option>
+                <option value="Pabuaran">PABUARAN</option>
+                <option value="Cambai">CAMBAI</option>
+                <option value="Santri Sabrang">SANTRI SABRANG</option>
+                <option value="Santri Asem">SANTRI ASEM</option>
+                <option value="Gabusan">GABUSAN</option>
+                <option value="KP. Baru">KP. BARU</option>
+              </optgroup>
+              <option value="All Area">JALUR UTAMA (BACKBONE)</option>
             </select>
           </div>
         </div>
@@ -556,21 +590,59 @@ export default function Tickets() {
                     value={formData.area}
                     onChange={(e) => setFormData({...formData, area: e.target.value})}
                   >
-                    <option value="Kemiri">DESA KEMIRI</option>
-                    <option value="Jambu Karya">DESA JAMBU KARYA</option>
+                    <optgroup label="KECAMATAN RAJEG">
+                      <option value="Desa Jambu Karya">DESA JAMBU KARYA</option>
+                      <option value="Desa Daon">DESA DAON</option>
+                      <option value="Daon Pintu">DAON PINTU</option>
+                      <option value="Daon Lembur">DAON LEMBUR</option>
+                      <option value="Desa Mekarsari">DESA MEKARSARI</option>
+                      <option value="Desa Rajeg Mulya">DESA RAJEG MULYA</option>
+                      <option value="Desa Rancabango">DESA RANCABANGO</option>
+                      <option value="Desa Sukamanah (Rajeg)">DESA SUKAMANAH (RAJEG)</option>
+                      <option value="Desa Sukasari">DESA SUKASARI</option>
+                      <option value="Desa Tanjakan">DESA TANJAKAN</option>
+                      <option value="Badak Onom">BADAK ONOM</option>
+                      <option value="Onom">ONOM</option>
+                      <option value="PSP / Perum Sukatani Permai">PSP / PERUM SUKATANI PERMAI</option>
+                    </optgroup>
+                    <optgroup label="KECAMATAN KEMIRI">
+                      <option value="Desa Kemiri">DESA KEMIRI</option>
+                      <option value="Desa Karang Anyar">DESA KARANG ANYAR</option>
+                      <option value="Desa Klebet">DESA KLEBET</option>
+                      <option value="Kelebet">KELEBET</option>
+                      <option value="Desa Legok Sukamaju">DESA LEGOK SUKAMAJU</option>
+                      <option value="Desa Lontar">DESA LONTAR</option>
+                      <option value="Desa Patramanggala">DESA PATRAMANGGALA</option>
+                      <option value="Patra">PATRA</option>
+                      <option value="Desa Rancalabuh">DESA RANCALABUH</option>
+                      <option value="Desa Sukamanah (Kemiri)">DESA SUKAMANAH (KEMIRI)</option>
+                    </optgroup>
+                    <optgroup label="LOKASI LAINNYA">
+                      <option value="Ribut">RIBUT</option>
+                      <option value="Pabuaran">PABUARAN</option>
+                      <option value="Cambai">CAMBAI</option>
+                      <option value="Santri Sabrang">SANTRI SABRANG</option>
+                      <option value="Santri Asem">SANTRI ASEM</option>
+                      <option value="Gabusan">GABUSAN</option>
+                      <option value="KP. Baru">KP. BARU</option>
+                    </optgroup>
                     <option value="All Area">JALUR UTAMA (BACKBONE)</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Tipe Masalah</label>
-                  <input 
-                    required
-                    type="text"
+                  <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Tipe Masalah / Layanan</label>
+                  <select 
                     className="w-full px-6 py-4 bg-blue-50/50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary transition-all"
-                    placeholder="Contoh: Internet Mati"
                     value={formData.problem_type}
                     onChange={(e) => setFormData({...formData, problem_type: e.target.value})}
-                  />
+                  >
+                    <option value="Internet Down">INTERNET MATI (DOWN)</option>
+                    <option value="Lambat">INTERNET LAMBAT (SLOW)</option>
+                    <option value="Pemasangan Baru">PEMASANGAN BARU (PSB)</option>
+                    <option value="Relokasi">RELOKASI PERANGKAT</option>
+                    <option value="Ganti Password">GANTI PASSWORD / WIFI</option>
+                    <option value="Lainnya">LAINNYA</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Nomor HP</label>

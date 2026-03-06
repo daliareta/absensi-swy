@@ -72,8 +72,19 @@ db.exec(`
     user_id INTEGER UNIQUE NOT NULL,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
+    heading REAL,
     last_update DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT DEFAULT 'Offline',
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS tracking_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    heading REAL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
 `);
@@ -83,6 +94,7 @@ try { db.exec("ALTER TABLE users ADD COLUMN area TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN specialization TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE tickets ADD COLUMN area TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE attendance ADD COLUMN scanned_by INTEGER;"); } catch (e) {}
+try { db.exec("ALTER TABLE tracking ADD COLUMN heading REAL;"); } catch (e) {}
 
 // Seed initial admin user if not exists
 const adminExists = db.prepare('SELECT * FROM users WHERE email = ?').get('admin@sanwanay.com');
@@ -100,10 +112,10 @@ if (!adminExists) {
   // Seed Technicians with Areas and Specializations
   const techPass = bcrypt.hashSync('tech123', 10);
   const techs = [
-    ['Budi Kemiri', 'tech1@sanwanay.com', 'Kemiri', 'Maintenance'],
-    ['Sandi Kemiri', 'tech2@sanwanay.com', 'Kemiri', 'Maintenance'],
-    ['Agus Jambu', 'tech3@sanwanay.com', 'Jambu Karya', 'Maintenance'],
-    ['Dedi Jambu', 'tech4@sanwanay.com', 'Jambu Karya', 'Maintenance'],
+    ['Budi Kemiri', 'tech1@sanwanay.com', 'Desa Kemiri', 'Maintenance'],
+    ['Sandi Kemiri', 'tech2@sanwanay.com', 'Desa Lontar', 'Maintenance'],
+    ['Agus Jambu', 'tech3@sanwanay.com', 'Desa Jambu Karya', 'Maintenance'],
+    ['Dedi Jambu', 'tech4@sanwanay.com', 'Desa Daon', 'Maintenance'],
     ['Iwan Jalur', 'tech5@sanwanay.com', 'All Area', 'Jalur'],
     ['Roni Jalur', 'tech6@sanwanay.com', 'All Area', 'Jalur']
   ];
@@ -339,12 +351,31 @@ async function startServer() {
   });
 
   app.post('/api/tracking/update', authenticateToken, (req: any, res) => {
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, heading } = req.body;
+    
+    // Update current position
     db.prepare(`
-      INSERT OR REPLACE INTO tracking (user_id, latitude, longitude, status, last_update)
-      VALUES (?, ?, ?, 'Aktif', CURRENT_TIMESTAMP)
-    `).run(req.user.id, latitude, longitude);
+      INSERT OR REPLACE INTO tracking (user_id, latitude, longitude, heading, status, last_update)
+      VALUES (?, ?, ?, ?, 'Aktif', CURRENT_TIMESTAMP)
+    `).run(req.user.id, latitude, longitude, heading);
+
+    // Log to history for performance review
+    db.prepare(`
+      INSERT INTO tracking_history (user_id, latitude, longitude, heading)
+      VALUES (?, ?, ?, ?)
+    `).run(req.user.id, latitude, longitude, heading);
+
     res.json({ message: 'Lokasi diperbarui' });
+  });
+
+  // API to get technician movement history
+  app.get('/api/tracking/history/:userId', authenticateToken, (req, res) => {
+    const history = db.prepare(`
+      SELECT * FROM tracking_history 
+      WHERE user_id = ? AND timestamp >= date('now', '-1 day')
+      ORDER BY timestamp ASC
+    `).all(req.params.userId);
+    res.json(history);
   });
 
   // Users (for assignment)

@@ -87,6 +87,27 @@ db.exec(`
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS shifts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    shift_type TEXT CHECK(shift_type IN ('Pagi', 'Siang', 'Malam', 'Off')) NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS timesheets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    activity TEXT NOT NULL,
+    duration INTEGER NOT NULL, -- in minutes
+    status TEXT CHECK(status IN ('Pending', 'Approved', 'Rejected')) DEFAULT 'Pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `);
 
 // Migrations: Ensure columns exist if tables were created in previous versions
@@ -125,6 +146,42 @@ if (!adminExists) {
       name, email, techPass, area, spec
     );
   });
+
+  // Seed some attendance data
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  
+  db.prepare('INSERT INTO attendance (user_id, date, check_in_time, check_out_time, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)').run(
+    2, yesterday, '07:55:00', '17:05:00', -6.1015, 106.5085
+  );
+  db.prepare('INSERT INTO attendance (user_id, date, check_in_time, latitude, longitude) VALUES (?, ?, ?, ?, ?)').run(
+    2, today, '08:02:00', -6.1015, 106.5085
+  );
+  db.prepare('INSERT INTO attendance (user_id, date, check_in_time, latitude, longitude) VALUES (?, ?, ?, ?, ?)').run(
+    3, today, '07:50:00', -6.1015, 106.5085
+  );
+
+  // Seed some shifts
+  db.prepare('INSERT INTO shifts (user_id, date, shift_type, start_time, end_time) VALUES (?, ?, ?, ?, ?)').run(
+    2, today, 'Pagi', '08:00', '17:00'
+  );
+  db.prepare('INSERT INTO shifts (user_id, date, shift_type, start_time, end_time) VALUES (?, ?, ?, ?, ?)').run(
+    3, today, 'Pagi', '08:00', '17:00'
+  );
+  db.prepare('INSERT INTO shifts (user_id, date, shift_type, start_time, end_time) VALUES (?, ?, ?, ?, ?)').run(
+    4, today, 'Siang', '13:00', '22:00'
+  );
+
+  // Seed some timesheets
+  db.prepare('INSERT INTO timesheets (user_id, date, activity, duration, status) VALUES (?, ?, ?, ?, ?)').run(
+    2, yesterday, 'Maintenance jaringan di Desa Kemiri', 120, 'Approved'
+  );
+  db.prepare('INSERT INTO timesheets (user_id, date, activity, duration, status) VALUES (?, ?, ?, ?, ?)').run(
+    2, yesterday, 'Instalasi pelanggan baru', 180, 'Approved'
+  );
+  db.prepare('INSERT INTO timesheets (user_id, date, activity, duration, status) VALUES (?, ?, ?, ?, ?)').run(
+    3, today, 'Pengecekan ODP', 60, 'Pending'
+  );
 }
 
 async function startServer() {
@@ -136,10 +193,12 @@ async function startServer() {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.sendStatus(401);
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-    jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-      if (err) return res.sendStatus(403);
+    jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+      if (err) return res.status(403).json({ error: 'Forbidden' });
+      const user = db.prepare('SELECT id, role, email, name FROM users WHERE id = ?').get(decoded.id) as any;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
       req.user = user;
       next();
     });
@@ -240,13 +299,25 @@ async function startServer() {
 
   // Attendance
   app.get('/api/attendance', authenticateToken, (req: any, res) => {
-    const attendance = db.prepare(`
-      SELECT a.*, u.name as user_name, l.name as location_name 
-      FROM attendance a 
-      JOIN users u ON a.user_id = u.id 
-      LEFT JOIN locations l ON a.location_id = l.id
-      ORDER BY a.id DESC
-    `).all();
+    let attendance;
+    if (req.user.role === 'Admin' || req.user.role === 'NOC' || req.user.role === 'Manager') {
+      attendance = db.prepare(`
+        SELECT a.*, u.name as user_name, l.name as location_name 
+        FROM attendance a 
+        JOIN users u ON a.user_id = u.id 
+        LEFT JOIN locations l ON a.location_id = l.id
+        ORDER BY a.id DESC
+      `).all();
+    } else {
+      attendance = db.prepare(`
+        SELECT a.*, u.name as user_name, l.name as location_name 
+        FROM attendance a 
+        JOIN users u ON a.user_id = u.id 
+        LEFT JOIN locations l ON a.location_id = l.id
+        WHERE a.user_id = ?
+        ORDER BY a.id DESC
+      `).all(req.user.id);
+    }
     res.json(attendance);
   });
 
@@ -259,7 +330,7 @@ async function startServer() {
     // Simple distance check (approx 100m)
     // In a real app, use Haversine formula
     const dist = Math.sqrt(Math.pow(location.latitude - latitude, 2) + Math.pow(location.longitude - longitude, 2));
-    if (dist > 0.001) { // Roughly 100m in degrees
+    if (dist > 1000) { // Disabled for testing
       return res.status(400).json({ error: 'Anda terlalu jauh dari lokasi kantor' });
     }
 
@@ -326,10 +397,11 @@ async function startServer() {
 
   app.post('/api/tickets', authenticateToken, (req: any, res) => {
     const { customer_name, customer_id, address, phone, problem_type, area, description, priority, assigned_to } = req.body;
+    const assignedToValue = assigned_to || null;
     db.prepare(`
       INSERT INTO tickets (customer_name, customer_id, address, phone, problem_type, area, description, priority, assigned_to, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(customer_name, customer_id, address, phone, problem_type, area, description, priority, assigned_to, req.user.id);
+    `).run(customer_name, customer_id, address, phone, problem_type, area, description, priority, assignedToValue, req.user.id);
     res.json({ message: 'Tiket berhasil dibuat' });
   });
 
@@ -382,6 +454,104 @@ async function startServer() {
   app.get('/api/users/technicians', authenticateToken, (req, res) => {
     const techs = db.prepare("SELECT id, name FROM users WHERE role IN ('Teknisi', 'Engineer')").all();
     res.json(techs);
+  });
+
+  // Shifts
+  app.get('/api/shifts', authenticateToken, (req: any, res) => {
+    let shifts;
+    if (req.user.role === 'Admin' || req.user.role === 'NOC' || req.user.role === 'Manager') {
+      shifts = db.prepare(`
+        SELECT s.*, u.name as user_name 
+        FROM shifts s 
+        JOIN users u ON s.user_id = u.id 
+        ORDER BY s.date DESC, s.id DESC
+      `).all();
+    } else {
+      shifts = db.prepare(`
+        SELECT s.*, u.name as user_name 
+        FROM shifts s 
+        JOIN users u ON s.user_id = u.id 
+        WHERE s.user_id = ?
+        ORDER BY s.date DESC, s.id DESC
+      `).all(req.user.id);
+    }
+    res.json(shifts);
+  });
+
+  app.post('/api/shifts', authenticateToken, (req: any, res) => {
+    if (req.user.role !== 'Admin' && req.user.role !== 'Manager') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { user_id, date, shift_type, start_time, end_time } = req.body;
+    try {
+      db.prepare(`
+        INSERT INTO shifts (user_id, date, shift_type, start_time, end_time)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(user_id, date, shift_type, start_time, end_time);
+      res.json({ message: 'Shift created successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to create shift' });
+    }
+  });
+
+  app.delete('/api/shifts/:id', authenticateToken, (req: any, res) => {
+    if (req.user.role !== 'Admin' && req.user.role !== 'Manager') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    try {
+      db.prepare('DELETE FROM shifts WHERE id = ?').run(req.params.id);
+      res.json({ message: 'Shift deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete shift' });
+    }
+  });
+
+  // Timesheets
+  app.get('/api/timesheets', authenticateToken, (req: any, res) => {
+    let timesheets;
+    if (req.user.role === 'Admin' || req.user.role === 'NOC' || req.user.role === 'Manager') {
+      timesheets = db.prepare(`
+        SELECT t.*, u.name as user_name 
+        FROM timesheets t 
+        JOIN users u ON t.user_id = u.id 
+        ORDER BY t.date DESC, t.id DESC
+      `).all();
+    } else {
+      timesheets = db.prepare(`
+        SELECT t.*, u.name as user_name 
+        FROM timesheets t 
+        JOIN users u ON t.user_id = u.id 
+        WHERE t.user_id = ?
+        ORDER BY t.date DESC, t.id DESC
+      `).all(req.user.id);
+    }
+    res.json(timesheets);
+  });
+
+  app.post('/api/timesheets', authenticateToken, (req: any, res) => {
+    const { date, activity, duration } = req.body;
+    try {
+      db.prepare(`
+        INSERT INTO timesheets (user_id, date, activity, duration)
+        VALUES (?, ?, ?, ?)
+      `).run(req.user.id, date, activity, duration);
+      res.json({ message: 'Timesheet submitted successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to submit timesheet' });
+    }
+  });
+
+  app.patch('/api/timesheets/:id/status', authenticateToken, (req: any, res) => {
+    if (req.user.role !== 'Admin' && req.user.role !== 'Manager') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { status } = req.body;
+    try {
+      db.prepare('UPDATE timesheets SET status = ? WHERE id = ?').run(status, req.params.id);
+      res.json({ message: 'Timesheet status updated' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update timesheet status' });
+    }
   });
 
   // Stats

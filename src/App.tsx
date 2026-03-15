@@ -6,6 +6,10 @@ import Attendance from './pages/Attendance';
 import Tickets from './pages/Tickets';
 import Tracking from './pages/Tracking';
 import Employees from './pages/Employees';
+import AbsensiList from './pages/AbsensiList';
+import Shifts from './pages/Shifts';
+import Timesheet from './pages/Timesheet';
+import Placeholder from './pages/Placeholder';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -47,6 +51,16 @@ export default function App() {
       case 'tickets': return <Tickets />;
       case 'tracking': return <Tracking />;
       case 'employees': return <Employees />;
+      case 'shifts': return <Shifts />;
+      case 'absensi_list': return <AbsensiList />;
+      case 'timesheet': return <Timesheet />;
+      case 'calendar': return <Placeholder title="Google Calendar" />;
+      case 'survey': return <Placeholder title="Survey" />;
+      case 'serah_terima': return <Placeholder title="Serah Terima" />;
+      case 'arsip': return <Placeholder title="Arsip Surat Menyurat" />;
+      case 'lead': return <Placeholder title="Lead Management" />;
+      case 'proyek': return <Placeholder title="Proyek" />;
+      case 'katalog': return <Placeholder title="Katalog Listing" />;
       default: return <Dashboard />;
     }
   };

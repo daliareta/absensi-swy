@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { 
   MapPin, 
   User, 
@@ -14,6 +17,14 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { fetchWithAuth, cn } from '../lib/utils';
+
+// Fix Leaflet's default icon path issues
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 export default function Tracking() {
   const [techs, setTechs] = useState<any[]>([]);
@@ -96,66 +107,71 @@ export default function Tracking() {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8 min-h-0">
         {/* Map Section */}
-        <div className="lg:col-span-3 bg-white rounded-[3rem] overflow-hidden relative border border-blue-50 shadow-2xl shadow-blue-900/5 group">
-          {/* Map Placeholder / Google Maps Integration */}
-          <div className="absolute inset-0 bg-blue-50/50 flex flex-col items-center justify-center text-slate-500 p-8 text-center">
-            <div className="relative">
-              <div className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform duration-500">
-                <Navigation className="w-10 h-10 text-primary animate-pulse" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center">
-                <Signal className="w-3 h-3 text-white" />
-              </div>
-            </div>
+        <div className="lg:col-span-3 bg-white rounded-[3rem] overflow-hidden relative border border-blue-50 shadow-2xl shadow-blue-900/5 group z-0">
+          <MapContainer 
+            center={[-6.1015, 106.5085]} 
+            zoom={13} 
+            style={{ height: '100%', width: '100%', zIndex: 0 }}
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
             
-            <h3 className="text-xl font-black text-primary-dark mb-3">GOOGLE MAPS: JAMBU KARYA</h3>
-            <p className="text-sm font-medium text-slate-400 max-w-sm leading-relaxed">
-              Monitoring area Rajeg, Kemiri & Sekitarnya. 
-              Posisi Kantor: <code className="bg-blue-100 text-primary px-2 py-0.5 rounded font-black">-6.1015, 106.5085</code>
-            </p>
+            {/* Office Marker */}
+            <Marker position={[-6.1015, 106.5085]}>
+              <Popup>
+                <div className="text-center">
+                  <h3 className="font-bold text-slate-800">Kantor Pusat</h3>
+                  <p className="text-xs text-slate-500">Jambu Karya</p>
+                </div>
+              </Popup>
+            </Marker>
 
-            {/* Mock Markers with Animation */}
-            {techs.map((tech, idx) => (
-              <div 
-                key={tech.id}
-                className="absolute transition-all duration-[2000ms] ease-in-out"
-                style={{ 
-                  top: `${35 + (idx * 12)}%`, 
-                  left: `${25 + (idx * 18)}%` 
-                }}
-              >
-                <div className="relative group/marker">
-                  <div className={cn(
-                    "w-8 h-8 rounded-full border-4 border-white shadow-2xl transition-all duration-1000 flex items-center justify-center",
-                    getStatusColor(tech.status)
-                  )}
-                  style={{
-                    transform: tech.heading !== null ? `rotate(${tech.heading}deg)` : 'none'
-                  }}>
-                    {tech.heading !== null ? (
-                      <Navigation className="w-4 h-4 text-white fill-current" />
-                    ) : (
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    )}
-                    <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-current" />
-                  </div>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-white px-4 py-2 rounded-2xl shadow-xl text-[10px] font-black text-primary-dark whitespace-nowrap opacity-0 group-hover/marker:opacity-100 transition-all translate-y-2 group-hover/marker:translate-y-0 border border-blue-50">
-                    {tech.user_name.toUpperCase()}
-                    <div className="text-[8px] text-slate-400 font-bold mt-0.5">{tech.status}</div>
+            {/* Technician Markers */}
+            {techs.map((tech) => {
+              const iconHtml = `
+                <div class="relative group/marker">
+                  <div class="w-8 h-8 rounded-full border-4 border-white shadow-2xl flex items-center justify-center ${getStatusColor(tech.status)}"
+                       style="transform: ${tech.heading !== null ? `rotate(${tech.heading}deg)` : 'none'}">
+                    ${tech.heading !== null 
+                      ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-navigation"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>` 
+                      : `<div class="w-2 h-2 bg-white rounded-full"></div>`
+                    }
                   </div>
                 </div>
-              </div>
-            ))}
-            
-            {techs.length === 0 && !loading && (
-              <div className="mt-8 px-6 py-3 bg-white/80 backdrop-blur-md rounded-2xl border border-blue-100 shadow-lg animate-bounce">
-                <p className="text-xs font-black text-primary tracking-widest">TIDAK ADA TEKNISI AKTIF SAAT INI</p>
-              </div>
-            )}
-          </div>
+              `;
+              
+              const customIcon = L.divIcon({
+                html: iconHtml,
+                className: 'custom-leaflet-icon',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+              });
+
+              return (
+                <Marker 
+                  key={tech.id} 
+                  position={[tech.latitude, tech.longitude]}
+                  icon={customIcon}
+                >
+                  <Popup>
+                    <div className="text-center">
+                      <h3 className="font-bold text-slate-800">{tech.user_name.toUpperCase()}</h3>
+                      <p className="text-xs text-slate-500">{tech.status}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Update: {new Date(tech.last_update).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
           
           {/* Map Overlay Controls */}
-          <div className="absolute top-8 left-8 flex flex-col space-y-3">
+          <div className="absolute top-8 left-8 flex flex-col space-y-3 z-[400]">
             <div className="bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-xl border border-blue-50 flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-emerald-500 rounded-full" />
@@ -168,11 +184,29 @@ export default function Tracking() {
             </div>
           </div>
 
-          <div className="absolute bottom-8 right-8">
+          <div className="absolute bottom-8 right-8 z-[400]">
             <div className="bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-blue-50 flex flex-col space-y-2">
-              <button className="w-10 h-10 flex items-center justify-center hover:bg-blue-50 rounded-xl text-primary font-black transition-colors">+</button>
+              <button 
+                className="w-10 h-10 flex items-center justify-center hover:bg-blue-50 rounded-xl text-primary font-black transition-colors"
+                onClick={() => {
+                  const map = document.querySelector('.leaflet-container') as any;
+                  if (map && map._leaflet_id) {
+                    const mapInstance = (window as any).L.Map._instances[map._leaflet_id];
+                    if (mapInstance) mapInstance.zoomIn();
+                  }
+                }}
+              >+</button>
               <div className="h-px bg-blue-50 mx-2" />
-              <button className="w-10 h-10 flex items-center justify-center hover:bg-blue-50 rounded-xl text-primary font-black transition-colors">-</button>
+              <button 
+                className="w-10 h-10 flex items-center justify-center hover:bg-blue-50 rounded-xl text-primary font-black transition-colors"
+                onClick={() => {
+                  const map = document.querySelector('.leaflet-container') as any;
+                  if (map && map._leaflet_id) {
+                    const mapInstance = (window as any).L.Map._instances[map._leaflet_id];
+                    if (mapInstance) mapInstance.zoomOut();
+                  }
+                }}
+              >-</button>
             </div>
           </div>
         </div>

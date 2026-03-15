@@ -38,28 +38,48 @@ export default function Attendance() {
     }
   };
 
-  const handleScan = async (tech_id: string) => {
+  const handleScan = async (scannedData: string) => {
     setShowScanner(false);
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject);
       });
 
-      const res = await fetchWithAuth('/attendance/scan', {
-        method: 'POST',
-        body: JSON.stringify({
-          tech_id,
-          type: scanType,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatus({ type: 'success', message: data.message });
-        loadAttendance();
+      if (user?.role === 'Admin' || user?.role === 'NOC') {
+        const res = await fetchWithAuth('/attendance/scan', {
+          method: 'POST',
+          body: JSON.stringify({
+            tech_id: scannedData,
+            type: scanType,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setStatus({ type: 'success', message: data.message });
+          loadAttendance();
+        } else {
+          setStatus({ type: 'error', message: data.error });
+        }
       } else {
-        setStatus({ type: 'error', message: data.error });
+        // Technician scanning location QR code
+        const endpoint = scanType === 'Masuk' ? '/attendance/check-in' : '/attendance/check-out';
+        const body = scanType === 'Masuk' 
+          ? { qr_code: scannedData, latitude: position.coords.latitude, longitude: position.coords.longitude }
+          : { description: 'Selesai shift', latitude: position.coords.latitude, longitude: position.coords.longitude };
+          
+        const res = await fetchWithAuth(endpoint, {
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setStatus({ type: 'success', message: data.message });
+          loadAttendance();
+        } else {
+          setStatus({ type: 'error', message: data.error });
+        }
       }
     } catch (error) {
       setStatus({ type: 'error', message: 'Terjadi kesalahan server atau GPS' });
@@ -151,6 +171,41 @@ export default function Attendance() {
                 <p className="text-slate-500 text-xs font-bold px-4 leading-relaxed">
                   Tunjukkan QR Code ini kepada Admin untuk melakukan absensi masuk atau pulang.
                 </p>
+
+                <div className="w-full pt-4 border-t border-blue-50 space-y-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Atau Scan QR Lokasi</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setScanType('Masuk')}
+                      className={cn(
+                        "py-3 rounded-xl font-black text-[10px] tracking-widest transition-all border-2",
+                        scanType === 'Masuk' 
+                          ? "bg-primary border-primary text-white shadow-lg shadow-primary/30" 
+                          : "bg-white border-blue-100 text-slate-400 hover:border-primary/30"
+                      )}
+                    >
+                      MASUK
+                    </button>
+                    <button
+                      onClick={() => setScanType('Pulang')}
+                      className={cn(
+                        "py-3 rounded-xl font-black text-[10px] tracking-widest transition-all border-2",
+                        scanType === 'Pulang' 
+                          ? "bg-primary-dark border-primary-dark text-white shadow-lg shadow-primary-dark/30" 
+                          : "bg-white border-blue-100 text-slate-400 hover:border-primary-dark/30"
+                      )}
+                    >
+                      PULANG
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setShowScanner(true)}
+                    className="w-full py-4 sanwanay-gradient text-white rounded-xl font-black text-xs shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center space-x-2"
+                  >
+                    <Scan className="w-4 h-4" />
+                    <span>SCAN QR LOKASI</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -173,8 +228,9 @@ export default function Attendance() {
                 <thead>
                   <tr className="bg-blue-50/30">
                     <th className="px-8 py-5 text-left text-[10px] font-black text-primary uppercase tracking-widest">Karyawan</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-primary uppercase tracking-widest">Waktu</th>
-                    <th className="px-8 py-5 text-left text-[10px] font-black text-primary uppercase tracking-widest">Tipe</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-primary uppercase tracking-widest">Tanggal</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-primary uppercase tracking-widest">Jam Masuk</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-primary uppercase tracking-widest">Jam Pulang</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-blue-50">
@@ -193,20 +249,21 @@ export default function Attendance() {
                       </td>
                       <td className="px-8 py-5">
                         <p className="text-sm font-bold text-slate-600">{item.date}</p>
-                        <p className="text-[10px] font-black text-primary">{item.check_in_time || item.check_out_time}</p>
                       </td>
                       <td className="px-8 py-5">
-                        <span className={cn(
-                          "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
-                          item.check_in_time ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
-                        )}>
-                          {item.check_in_time ? 'MASUK' : 'PULANG'}
+                        <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700">
+                          {item.check_in_time || '-'}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-100 text-rose-700">
+                          {item.check_out_time || '-'}
                         </span>
                       </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={3} className="px-8 py-20 text-center">
+                      <td colSpan={4} className="px-8 py-20 text-center">
                         <div className="flex flex-col items-center">
                           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                             <Clock className="w-8 h-8 text-blue-200" />

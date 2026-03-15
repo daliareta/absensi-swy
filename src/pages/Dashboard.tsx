@@ -1,53 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, 
-  Ticket, 
   CheckCircle2, 
   Clock,
-  TrendingUp,
+  AlertTriangle,
+  XCircle,
+  Calendar,
+  Activity,
   ArrowUpRight,
   ArrowDownRight,
-  Zap,
-  MapPin,
-  Activity
+  ShieldAlert,
+  TrendingUp
 } from 'lucide-react';
 import { 
-  BarChart, 
-  Bar, 
+  AreaChart,
+  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
 import { fetchWithAuth, cn } from '../lib/utils';
 
 const StatCard = ({ title, value, icon: Icon, color, trend, trendValue, subtitle }: any) => (
-  <div className="bg-white p-8 rounded-[2.5rem] border border-blue-50 shadow-xl shadow-blue-900/5 hover:scale-[1.02] transition-all group relative overflow-hidden">
-    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
-    
-    <div className="relative z-10">
-      <div className="flex justify-between items-start mb-6">
-        <div className={cn("p-4 rounded-2xl shadow-lg", color)}>
-          <Icon className="w-6 h-6 text-white" />
+  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+    <div className="flex justify-between items-start mb-4">
+      <div className={cn("p-3 rounded-xl", color)}>
+        <Icon className="w-5 h-5" />
+      </div>
+      {trend && (
+        <div className={cn(
+          "flex items-center text-[10px] font-bold px-2 py-1 rounded-full",
+          trend === 'up' ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
+        )}>
+          {trend === 'up' ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+          {trendValue}
         </div>
-        {trend && (
-          <div className={cn(
-            "flex items-center text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest",
-            trend === 'up' ? "text-emerald-600 bg-emerald-50 border border-emerald-100" : "text-rose-600 bg-rose-50 border border-rose-100"
-          )}>
-            {trend === 'up' ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-            {trendValue}
-          </div>
-        )}
-      </div>
-      <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{title}</h3>
-      <div className="flex items-baseline space-x-2 mt-1">
-        <p className="text-4xl font-black text-primary-dark">{value}</p>
-        {subtitle && <span className="text-xs font-bold text-slate-400">{subtitle}</span>}
-      </div>
+      )}
+    </div>
+    <h3 className="text-slate-500 text-xs font-medium mb-1">{title}</h3>
+    <div className="flex items-baseline space-x-1">
+      <p className="text-3xl font-bold text-slate-800">{value}</p>
+      {subtitle && <span className="text-xs font-medium text-slate-400">{subtitle}</span>}
     </div>
   </div>
 );
@@ -55,21 +54,13 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue, subtitle
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [recentTickets, setRecentTickets] = useState<any[]>([]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [statsRes, ticketsRes] = await Promise.all([
-          fetchWithAuth('/stats'),
-          fetchWithAuth('/tickets')
-        ]);
-        
+        const statsRes = await fetchWithAuth('/stats');
         const statsData = await statsRes.json();
-        const ticketsData = await ticketsRes.json();
-        
         setStats(statsData);
-        setRecentTickets(ticketsData.slice(0, 5));
       } catch (error) {
         console.error(error);
       } finally {
@@ -80,201 +71,249 @@ export default function Dashboard() {
   }, []);
 
   const chartData = [
-    { name: 'Sen', tickets: 12, attendance: 15 },
-    { name: 'Sel', tickets: 19, attendance: 14 },
-    { name: 'Rab', tickets: 15, attendance: 16 },
-    { name: 'Kam', tickets: 22, attendance: 18 },
-    { name: 'Jum', tickets: 30, attendance: 17 },
-    { name: 'Sab', tickets: 10, attendance: 8 },
-    { name: 'Min', tickets: 5, attendance: 4 },
+    { name: 'Sen', hadir: 4 },
+    { name: 'Sel', hadir: 3 },
+    { name: 'Rab', hadir: 4 },
+    { name: 'Kam', hadir: 2 },
+    { name: 'Jum', hadir: 4 },
+    { name: 'Sab', hadir: 0 },
+    { name: 'Min', hadir: 0 },
+  ];
+
+  const pieData = [
+    { name: 'Hadir', value: 0, color: '#10b981' },
+    { name: 'Terlambat', value: 0, color: '#f59e0b' },
+    { name: 'Tidak Hadir', value: 4, color: '#ef4444' },
+    { name: 'Cuti', value: 0, color: '#3b82f6' },
   ];
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-full space-y-4">
-      <Activity className="w-12 h-12 text-primary animate-pulse" />
-      <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Menyiapkan Dashboard...</p>
+      <Activity className="w-10 h-10 text-blue-500 animate-pulse" />
+      <p className="text-sm font-medium text-slate-500">Memuat Dashboard...</p>
     </div>
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-primary-dark tracking-tight">DASHBOARD UTAMA</h1>
-          <p className="text-slate-500 font-medium">Selamat datang di Panel Kontrol Sanwanay Network</p>
+          <h1 className="text-2xl font-bold text-slate-800">Dashboard Admin</h1>
+          <p className="text-slate-500 text-sm mt-1">Selamat datang! Berikut ringkasan kehadiran dan statistik lengkap</p>
         </div>
-        <div className="flex items-center space-x-3 bg-white px-6 py-3 rounded-2xl shadow-sm border border-blue-50">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-          <span className="text-xs font-black text-primary-dark uppercase tracking-widest">Sistem Online</span>
+        <div className="flex items-center space-x-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-xs font-bold text-emerald-700">Live Dashboard</span>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard 
-          title="Teknisi Aktif" 
-          value={stats?.activeTechs || 0} 
+          title="Total Karyawan" 
+          value="4" 
           icon={Users} 
-          color="sanwanay-gradient"
+          color="bg-blue-50 text-blue-600"
           trend="up"
-          trendValue="12%"
-          subtitle="Orang"
+          trendValue="+5%"
+          subtitle="orang"
         />
         <StatCard 
-          title="Absensi Hari Ini" 
-          value={stats?.todayAttendance || 0} 
-          icon={Clock} 
-          color="bg-amber-500"
-          trend="up"
-          trendValue="5%"
-          subtitle="Hadir"
-        />
-        <StatCard 
-          title="Tiket Open" 
-          value={stats?.openTickets || 0} 
-          icon={Ticket} 
-          color="bg-rose-500"
-          trend="down"
-          trendValue="8%"
-          subtitle="Kasus"
-        />
-        <StatCard 
-          title="Tiket Selesai" 
-          value={(stats?.totalTickets || 0) - (stats?.openTickets || 0)} 
+          title="Hadir Hari Ini" 
+          value="0" 
           icon={CheckCircle2} 
-          color="bg-emerald-500"
-          subtitle="Selesai"
+          color="bg-emerald-50 text-emerald-600"
+          trend="up"
+          trendValue="+2%"
+          subtitle="orang"
+        />
+        <StatCard 
+          title="Terlambat" 
+          value="0" 
+          icon={Clock} 
+          color="bg-amber-50 text-amber-600"
+          trend="down"
+          trendValue="-1%"
+          subtitle="orang"
+        />
+        <StatCard 
+          title="Tidak Hadir" 
+          value="4" 
+          icon={XCircle} 
+          color="bg-rose-50 text-rose-600"
+          trend="down"
+          trendValue="-3%"
+          subtitle="orang"
+        />
+        <StatCard 
+          title="Cuti" 
+          value="0" 
+          icon={Calendar} 
+          color="bg-purple-50 text-purple-600"
+          subtitle="orang"
+        />
+        <StatCard 
+          title="Alert Keamanan" 
+          value="0" 
+          icon={ShieldAlert} 
+          color="bg-slate-100 text-slate-600"
+          subtitle="alert"
         />
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-blue-50 shadow-xl shadow-blue-900/5">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-lg font-black text-primary-dark tracking-tight">PERFORMA TIKET</h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Statistik Mingguan</p>
-            </div>
-            <Zap className="w-6 h-6 text-amber-500" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-base font-bold text-slate-800">Tren Kehadiran 7 Hari Terakhir</h3>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Minggu Ini</span>
           </div>
-          <div className="h-80">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                  <linearGradient id="colorHadir" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-                <Area type="monotone" dataKey="tickets" stroke="#2563eb" strokeWidth={4} fillOpacity={1} fill="url(#colorTickets)" />
+                <Area type="monotone" dataKey="hadir" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorHadir)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-blue-50 shadow-xl shadow-blue-900/5">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-lg font-black text-primary-dark tracking-tight">KEHADIRAN TIM</h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Partisipasi Harian</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 bg-primary rounded-full"></span>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hadir</span>
-            </div>
-          </div>
-          <div className="h-80">
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="text-base font-bold text-slate-800 mb-6">Status Hari Ini</h3>
+          <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
-                <Tooltip 
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '15px' }}
-                />
-                <Bar dataKey="attendance" fill="#2563eb" radius={[10, 10, 0, 0]} barSize={32} />
-              </BarChart>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-4 space-y-2">
+            {pieData.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }} />
+                  <span className="text-slate-600">{item.name}</span>
+                </div>
+                <span className="font-bold text-slate-800">{item.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Activity Table */}
-      <div className="bg-white rounded-[2.5rem] border border-blue-50 shadow-xl shadow-blue-900/5 overflow-hidden">
-        <div className="p-8 border-b border-blue-50 flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-black text-primary-dark tracking-tight uppercase">Tiket Terbaru</h3>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aktivitas perbaikan terkini</p>
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="text-base font-bold text-slate-800 flex items-center">
+              <Activity className="w-5 h-5 mr-2 text-blue-500" />
+              Aktivitas Terkini
+            </h3>
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Hari Ini</span>
           </div>
-          <button className="px-6 py-3 bg-blue-50 text-primary rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
-            LIHAT SEMUA
-          </button>
+          <div className="p-6 space-y-6">
+            <div className="flex items-start">
+              <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 mr-4" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">15 karyawan sudah absen masuk</p>
+                <p className="text-xs text-slate-500 mt-1">2 menit lalu</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="w-2 h-2 mt-2 rounded-full bg-amber-500 mr-4" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">3 karyawan terlambat</p>
+                <p className="text-xs text-slate-500 mt-1">15 menit lalu</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="w-2 h-2 mt-2 rounded-full bg-emerald-500 mr-4" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">GPS tracking aktif untuk 12 karyawan</p>
+                <p className="text-xs text-slate-500 mt-1">30 menit lalu</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 mr-4" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">Face recognition berhasil 98%</p>
+                <p className="text-xs text-slate-500 mt-1">1 jam lalu</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-blue-50/30">
-                <th className="px-8 py-5 text-[10px] font-black text-primary uppercase tracking-widest">Pelanggan</th>
-                <th className="px-8 py-5 text-[10px] font-black text-primary uppercase tracking-widest">Masalah & Area</th>
-                <th className="px-8 py-5 text-[10px] font-black text-primary uppercase tracking-widest">Prioritas</th>
-                <th className="px-8 py-5 text-[10px] font-black text-primary uppercase tracking-widest">Status</th>
-                <th className="px-8 py-5 text-[10px] font-black text-primary uppercase tracking-widest">Waktu</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-blue-50">
-              {recentTickets.map((ticket) => (
-                <tr key={ticket.id} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-8 py-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-primary font-black shadow-inner">
-                        {ticket.customer_name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-black text-slate-800 text-sm">{ticket.customer_name}</div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {ticket.customer_id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="text-sm text-slate-700 font-bold">{ticket.problem_type}</div>
-                    <div className="flex items-center text-[10px] text-primary font-black uppercase tracking-widest mt-1">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      {ticket.area || 'KEMIRI'}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                      ticket.priority === 'High' ? "bg-rose-50 text-rose-600 border-rose-100" : 
-                      ticket.priority === 'Medium' ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-blue-50 text-primary border-blue-100"
-                    )}>
-                      {ticket.priority}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full mr-2",
-                        ticket.status === 'Selesai' ? "bg-emerald-500" : "bg-primary animate-pulse"
-                      )} />
-                      <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{ticket.status}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-xs font-bold text-slate-400">
-                    {new Date(ticket.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="text-base font-bold text-slate-800 flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2 text-emerald-500" />
+              Metrik Performa
+            </h3>
+            <span className="text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full">Bulan Ini</span>
+          </div>
+          <div className="p-6 space-y-6">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-medium text-slate-700">Tingkat Kehadiran</span>
+                <span className="font-bold text-emerald-600">96.5%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '96.5%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-medium text-slate-700">Ketepatan Waktu</span>
+                <span className="font-bold text-blue-600">84.2%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '84.2%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-medium text-slate-700">Produktivitas</span>
+                <span className="font-bold text-purple-600">88.7%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '88.7%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-medium text-slate-700">Kepuasan Karyawan</span>
+                <span className="font-bold text-amber-600">92.1%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-amber-500 h-2 rounded-full" style={{ width: '92.1%' }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -12,7 +12,8 @@ import {
   Trash2, 
   XCircle,
   CheckCircle2,
-  Briefcase
+  Briefcase,
+  AlertTriangle
 } from 'lucide-react';
 import { fetchWithAuth, cn } from '../lib/utils';
 
@@ -23,6 +24,7 @@ export default function Employees() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [employeeToDelete, setEmployeeToDelete] = useState<number | null>(null);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -72,13 +74,18 @@ export default function Employees() {
           specialization: 'Fiber Optic'
         });
         loadEmployees();
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Gagal menyimpan data karyawan');
       }
     } catch (error) {
       console.error(error);
+      setError('Terjadi kesalahan server');
     }
   };
 
   const handleEdit = (employee: any) => {
+    setError('');
     setEditingEmployee(employee);
     setFormData({
       name: employee.name,
@@ -104,9 +111,13 @@ export default function Employees() {
       if (res.ok) {
         loadEmployees();
         setEmployeeToDelete(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Gagal menghapus karyawan');
       }
     } catch (error) {
       console.error(error);
+      alert('Terjadi kesalahan server');
     }
   };
 
@@ -294,6 +305,12 @@ export default function Employees() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-sm rounded-lg flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-700">Nama Lengkap</label>

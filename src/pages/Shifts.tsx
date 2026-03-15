@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchWithAuth, cn } from '../lib/utils';
-import { Calendar, Plus, Trash2, Clock, User, RefreshCw } from 'lucide-react';
+import { Calendar, Plus, Trash2, Clock, User, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function Shifts() {
   const [shifts, setShifts] = useState<any[]>([]);
@@ -8,6 +8,8 @@ export default function Shifts() {
   const [user, setUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [technicians, setTechnicians] = useState<any[]>([]);
+  const [shiftToDelete, setShiftToDelete] = useState<number | null>(null);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     user_id: '',
@@ -60,21 +62,36 @@ export default function Shifts() {
       if (res.ok) {
         setShowModal(false);
         loadShifts();
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Gagal menyimpan shift');
       }
     } catch (error) {
       console.error(error);
+      setError('Terjadi kesalahan server');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Hapus jadwal shift ini?')) return;
+    setShiftToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!shiftToDelete) return;
     try {
-      const res = await fetchWithAuth(`/shifts/${id}`, {
+      const res = await fetchWithAuth(`/shifts/${shiftToDelete}`, {
         method: 'DELETE'
       });
-      if (res.ok) loadShifts();
+      if (res.ok) {
+        loadShifts();
+        setShiftToDelete(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Gagal menghapus shift');
+      }
     } catch (error) {
       console.error(error);
+      alert('Terjadi kesalahan server');
     }
   };
 
@@ -97,7 +114,10 @@ export default function Shifts() {
           </button>
           {isAdmin && (
             <button 
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                setError('');
+                setShowModal(true);
+              }}
               className="px-6 py-3 sanwanay-gradient text-white rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-blue-900/20 flex items-center space-x-2 font-black text-[10px] tracking-widest uppercase"
             >
               <Plus className="w-4 h-4" />
@@ -186,6 +206,37 @@ export default function Shifts() {
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {shiftToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-rose-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800">Hapus Shift?</h3>
+              <p className="text-slate-500 text-sm">
+                Apakah Anda yakin ingin menghapus jadwal shift ini? Data yang dihapus tidak dapat dikembalikan.
+              </p>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-3">
+              <button 
+                onClick={() => setShiftToDelete(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-sm"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
@@ -197,6 +248,12 @@ export default function Shifts() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-sm rounded-lg flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Karyawan</label>
                 <select 

@@ -39,6 +39,8 @@ export default function Tickets() {
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState('');
+  const [ticketToDelete, setTicketToDelete] = useState<number | null>(null);
   const itemsPerPage = 6;
 
   const [formData, setFormData] = useState({
@@ -157,9 +159,13 @@ export default function Tickets() {
           assigned_to: ''
         });
         loadTickets();
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Gagal membuat tiket');
       }
     } catch (error) {
       console.error(error);
+      setError('Terjadi kesalahan server');
     }
   };
 
@@ -172,6 +178,29 @@ export default function Tickets() {
       if (res.ok) loadTickets();
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    setTicketToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!ticketToDelete) return;
+    try {
+      const res = await fetchWithAuth(`/tickets/${ticketToDelete}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        loadTickets();
+        setTicketToDelete(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Gagal menghapus tiket');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Terjadi kesalahan server');
     }
   };
 
@@ -227,7 +256,10 @@ export default function Tickets() {
           
           {(user?.role === 'Admin' || user?.role === 'NOC') && (
             <button 
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                setError('');
+                setShowModal(true);
+              }}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -440,9 +472,15 @@ export default function Tickets() {
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
                         )}
-                        <button className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-md transition-colors">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        {(user?.role === 'Admin' || user?.role === 'Manager') && (
+                          <button 
+                            onClick={() => handleDelete(ticket.id)}
+                            className="p-1.5 bg-rose-50 text-rose-600 rounded-md hover:bg-rose-100 transition-colors"
+                            title="Hapus Tiket"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -583,6 +621,12 @@ export default function Tickets() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-sm rounded-lg flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-700">Nama Pelanggan</label>

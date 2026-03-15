@@ -239,6 +239,28 @@ async function startServer() {
     }
   });
 
+  app.patch('/api/users/:id', authenticateToken, (req: any, res) => {
+    if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Forbidden' });
+    const id = req.params.id;
+    const { name, email, password, role, area, specialization } = req.body;
+    
+    try {
+      if (password) {
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        db.prepare('UPDATE users SET name = ?, email = ?, password = ?, role = ?, area = ?, specialization = ? WHERE id = ?').run(
+          name, email, hashedPassword, role, area, specialization, id
+        );
+      } else {
+        db.prepare('UPDATE users SET name = ?, email = ?, role = ?, area = ?, specialization = ? WHERE id = ?').run(
+          name, email, role, area, specialization, id
+        );
+      }
+      res.json({ message: 'User updated' });
+    } catch (e) {
+      res.status(400).json({ error: 'Failed to update user' });
+    }
+  });
+
   app.delete('/api/users/:id', authenticateToken, (req: any, res) => {
     if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Forbidden' });
     const id = req.params.id;
@@ -249,6 +271,9 @@ async function startServer() {
         db.prepare('DELETE FROM attendance WHERE user_id = ? OR scanned_by = ?').run(id, id);
         db.prepare('DELETE FROM tickets WHERE assigned_to = ? OR created_by = ?').run(id, id);
         db.prepare('DELETE FROM tracking WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM tracking_history WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM shifts WHERE user_id = ?').run(id);
+        db.prepare('DELETE FROM timesheets WHERE user_id = ?').run(id);
         db.prepare('DELETE FROM users WHERE id = ?').run(id);
       });
       transaction();
@@ -410,6 +435,18 @@ async function startServer() {
     const completed_at = status === 'Selesai' ? new Date().toISOString() : null;
     db.prepare('UPDATE tickets SET status = ?, completed_at = ? WHERE id = ?').run(status, completed_at, req.params.id);
     res.json({ message: 'Status tiket diperbarui' });
+  });
+
+  app.delete('/api/tickets/:id', authenticateToken, (req: any, res) => {
+    if (req.user.role !== 'Admin' && req.user.role !== 'Manager') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    try {
+      db.prepare('DELETE FROM tickets WHERE id = ?').run(req.params.id);
+      res.json({ message: 'Tiket berhasil dihapus' });
+    } catch (error) {
+      res.status(500).json({ error: 'Gagal menghapus tiket' });
+    }
   });
 
   // Tracking

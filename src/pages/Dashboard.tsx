@@ -109,56 +109,34 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
-          title="Total Karyawan" 
-          value="4" 
-          icon={Users} 
+          title="Total Tiket" 
+          value={stats?.totalTickets || 0} 
+          icon={Activity} 
           color="bg-blue-50 text-blue-600"
-          trend="up"
-          trendValue="+5%"
-          subtitle="orang"
+          subtitle="tiket"
         />
         <StatCard 
-          title="Hadir Hari Ini" 
-          value="0" 
-          icon={CheckCircle2} 
-          color="bg-emerald-50 text-emerald-600"
-          trend="up"
-          trendValue="+2%"
-          subtitle="orang"
-        />
-        <StatCard 
-          title="Terlambat" 
-          value="0" 
-          icon={Clock} 
-          color="bg-amber-50 text-amber-600"
-          trend="down"
-          trendValue="-1%"
-          subtitle="orang"
-        />
-        <StatCard 
-          title="Tidak Hadir" 
-          value="4" 
-          icon={XCircle} 
+          title="Tiket Open" 
+          value={stats?.openTickets || 0} 
+          icon={AlertTriangle} 
           color="bg-rose-50 text-rose-600"
-          trend="down"
-          trendValue="-3%"
+          subtitle="tiket"
+        />
+        <StatCard 
+          title="Teknisi Aktif" 
+          value={stats?.activeTechs || 0} 
+          icon={Users} 
+          color="bg-emerald-50 text-emerald-600"
           subtitle="orang"
         />
         <StatCard 
-          title="Cuti" 
-          value="0" 
-          icon={Calendar} 
+          title="Absen Hari Ini" 
+          value={stats?.todayAttendance || 0} 
+          icon={CheckCircle2} 
           color="bg-purple-50 text-purple-600"
           subtitle="orang"
-        />
-        <StatCard 
-          title="Alert Keamanan" 
-          value="0" 
-          icon={ShieldAlert} 
-          color="bg-slate-100 text-slate-600"
-          subtitle="alert"
         />
       </div>
 

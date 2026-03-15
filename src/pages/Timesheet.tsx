@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { fetchWithAuth, cn } from '../lib/utils';
-import { Calendar, Plus, Trash2, Clock, User, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Plus, Trash2, Clock, User, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 export default function Timesheet() {
   const [timesheets, setTimesheets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -48,9 +49,13 @@ export default function Timesheet() {
           duration: 60
         });
         loadTimesheets();
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Gagal menyimpan laporan aktivitas');
       }
     } catch (error) {
       console.error(error);
+      setError('Terjadi kesalahan server');
     }
   };
 
@@ -85,7 +90,10 @@ export default function Timesheet() {
           </button>
           {!isAdmin && (
             <button 
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                setError('');
+                setShowModal(true);
+              }}
               className="px-6 py-3 sanwanay-gradient text-white rounded-2xl hover:scale-[1.02] transition-all shadow-xl shadow-blue-900/20 flex items-center space-x-2 font-black text-[10px] tracking-widest uppercase"
             >
               <Plus className="w-4 h-4" />
@@ -196,6 +204,12 @@ export default function Timesheet() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 text-sm rounded-lg flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tanggal</label>
                 <input 
